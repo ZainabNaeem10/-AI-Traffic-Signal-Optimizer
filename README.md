@@ -1,4 +1,4 @@
-# AI Signal Time Optimizer - Assignment 1
+# AI Signal Time Optimizer
 
 This project optimizes traffic signal timings for a two-phase intersection (North-South and East-West).  
 We use Simulated Annealing (SA) to reduce average waiting time better than fixed equal-split plans.  
@@ -12,7 +12,7 @@ Inputs and results are handled through a Streamlit app.
 ## Required Packages
 Run this command once to install everything:
 
-pip install streamlit numpy pandas matplotlib scikit-learn
+pip install -r requirements.txt
 
 ## How to Run
 1. Open terminal or VS Code in the project folder.
