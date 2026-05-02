@@ -1,71 +1,66 @@
-# AI Signal Time Optimizer
+# AI Signal Time Optimizer (4-Phase LHD Split-Phasing)
 
-This project optimizes traffic signal timings for a two-phase intersection (North-South and East-West).  
-We use Simulated Annealing (SA) to reduce average waiting time better than fixed equal-split plans.  
-Hill Climbing (HC) is the baseline.  
-Genetic Algorithm (GA) for comparisons
-A 600-second point-queue simulation calculates delay.  
-Inputs and results are handled through a Streamlit app.
+This project is a high-fidelity **Traffic Signal Optimization System** designed for Left-Hand Drive (LHD) environments. It utilizes AI search heuristics to minimize vehicular delay at a four-way intersection by dynamically optimizing the green time distribution across four distinct phases.
 
-# Execution Instructions and Dependencies
+## 🚀 Features
+- **4-Phase Split-Phasing**: Dynamically optimizes green windows for North, South, East, and West directions.
+- **LHD Physics Integration**: Implements "Free-Flow Left" logic where 20% of traffic bypasses the red-light queue, reflecting real-world LHD movement patterns.
+- **AI Search Suite**: Includes three optimization strategies:
+  - **Simulated Annealing (SA)**: Global search with Metropolis Criterion.
+  - **Hill Climbing (HC)**: Fast, greedy local optimization.
+  - **Genetic Algorithm (GA)**: Population-based evolutionary optimization.
+- **ML Traffic Prediction**: Uses a RandomForest model to predict traffic demand based on the Time of Day and Day Type (Weekday/Weekend).
+- **Real-time Simulation**: A 600-second point-queue simulation engine validates timings and calculates the Average Vehicular Delay (AVD).
 
-## Required Packages
-Run this command once to install everything:
+---
 
+## 🛠️ Execution Instructions and Dependencies
+
+### 1. Required Packages
+Install the necessary dependencies via pip:
+```bash
 pip install -r requirements.txt
+```
 
-## How to Run
-1. Open terminal or VS Code in the project folder.
-2. Type this command:
+### 2. How to Run
+1. Navigate to the project directory in your terminal.
+2. Execute the Streamlit application:
+   ```bash
+   streamlit run app.py
+   ```
+3. The dashboard will open at `http://localhost:8501`.
 
-streamlit run app.py
+---
 
-3. Browser opens the app at localhost:8501.
-4. Use sliders to set values. Click Run AI Optimization. See results.
+## 📊 Sample Metrics & Results
+- **Optimized Phases**: N(12s), S(12s), E(14s), W(10s)
+- **Baseline**: Comparison against an "Equal Split" (25% per phase) plan.
+- **Delay Reduction**: Typically ranges from 10% to 30% depending on traffic congestion levels.
+- **Mathematical Invariant**: Ensures $g_N + g_S + g_E + g_W + \text{Clearance} = \text{Cycle Length}$.
 
-# Sample Input / Output Demonstrations
+---
 
-## Sample Input (sidebar sliders in Streamlit)
-Cycle Length: 60 seconds  
-Clearance (Yellow + All-Red): 6 seconds  
-(Other sliders: Demand values you used — e.g., North 15, South 12, East 10, West 8 vehicles per minute — note them if you remember)
+## 🔬 Technical Implementation Details
 
-Click "Run AI Optimization" button after setting sliders.
+### Simulation Engine (`traffic_engine.py`)
+- **Point-Queue Model**: Tracks car arrivals and departures second-by-second.
+- **Oversaturation Penalty**: Implements a squared penalty ($excess^2 \times 50$) to prevent massive queue build-ups in any single direction.
+- **Normalized Delay**: Calculates the Average Vehicular Delay (AVD) as the primary fitness metric.
 
-Sliders to select type of technique to visualize:
-Simmulated Annealing
-Genetic Algorithm
-Hill Climbing
+### Optimization Layer (`optimizer.py`)
+- **4D State Space**: Searches the vector $[g_N, g_S, g_E, g_W]$.
+- **Constraint Handling**: Enforces a minimum 10s green time per phase and maintains the total cycle sum during neighbor generation and mutation.
 
-## Sample Output (real results from the app)
-Optimized NS Green Time: 16 seconds  
-Optimized EW Green Time: 38 seconds  
-Delay Reduction: 11.8 percent  
+### ML Component
+- **RandomForestRegressor**: Predicts the `cars_per_minute` demand for each direction, allowing the AI to optimize for predicted future peaks rather than just current values.
 
-Check formula displayed: NS(16) + EW(38) + Clearance(6) = 60s (Cycle: 60s)  
+---
 
-Bar chart shows:  
-AI Optimized delay (lower)  
-Equal Split delay (higher)  
-
-Runtime: around 10-20 seconds (depends on laptop)
-
-
-# Brief Technical Overview of Implementation Approach
-
-Streamlit (app.py) collects inputs. Demand per direction, cycle length, clearance time.
-Simulation (traffic_engine.py) runs 600-second time-stepped point-queue model. FIFO queues, per-second updates, computes delay.
-Optimization (optimizer.py) uses Simulated Annealing. Starts with random feasible timings. Creates neighbors with small changes to green times. Evaluates delay. Accepts or rejects with Metropolis criterion. Cools temperature. Stops at max 2000 iterations.
-Hill Climbing runs as greedy baseline for comparison.
-Equal-split baseline divides cycle minus clearance equally.
-Genetic Algorithm is used with muatations,crossover and populations.
-Output shows timings, reduction percentage, metrics, matplotlib charts in Streamlit.
-Simple ML (linear regression or clustering) predicts traffic patterns from simulated data to guide scenarios.
-
-Only SA and HC (local search methods) are used. Runs offline with user inputs. No sensors.
-
-# Files
-app.py Streamlit interface
-traffic_engine.py simulation
-optimizer.py SA, GA and HC code
-
+## 📂 Project Structure
+- `app.py`: Streamlit dashboard and UI logic.
+- `traffic_engine.py`: Simulation environment and delay calculation.
+- `optimizer.py`: AI Search algorithms (SA, HC, GA).
+- `generate_data.py`: Synthetic traffic data generator.
+- `train_model.py`: ML training script.
+- `traffic_model.pkl`: Serialized ML weights.
+- `requirements.txt`: Project dependencies.
