@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import joblib
+
 from traffic_engine import TrafficEnvironment
 from optimizer import (
     SimulatedAnnealing,
@@ -11,6 +13,9 @@ st.set_page_config(page_title="AI Signal (Cross Section) Optimizer", layout="wid
 
 st.title("🚦 AI Signal (Cross Section) Optimizer")
 
+# Load ML model
+model = joblib.load("traffic_model.pkl")
+
 # Sidebar controls
 st.sidebar.header("Intersection Settings")
 
@@ -21,13 +26,58 @@ total_clearance_time = st.sidebar.slider(
     4, 12, 6
 )
 
-st.sidebar.header("Traffic Demand (Cars Per Minute)")
+# 🔥 NEW: Mode selection
+mode = st.sidebar.radio(
+    "Select Mode",
+    ["Manual Input", "ML Prediction"]
+)
 
-north_rate = st.sidebar.slider("North", 0, 50, 12)
-south_rate = st.sidebar.slider("South", 0, 50, 13)
-east_rate = st.sidebar.slider("East", 0, 50, 15)
-west_rate = st.sidebar.slider("West", 0, 50, 29)
+# 🔥 TRAFFIC INPUT HANDLING
+if mode == "Manual Input":
+    st.sidebar.header("Traffic Demand (Cars Per Minute)")
 
+    north_rate = st.sidebar.slider("North", 0, 50, 12)
+    south_rate = st.sidebar.slider("South", 0, 50, 13)
+    east_rate = st.sidebar.slider("East", 0, 50, 15)
+    west_rate = st.sidebar.slider("West", 0, 50, 29)
+
+    cars_per_minute = {
+        'N': north_rate,
+        'S': south_rate,
+        'E': east_rate,
+        'W': west_rate
+    }
+
+else:
+    st.sidebar.header("ML Traffic Prediction")
+
+    time_of_day = st.sidebar.slider("Time of Day", 0, 23, 8)
+
+    day_type = st.sidebar.selectbox(
+        "Day Type",
+        ["Weekday", "Weekend"]
+    )
+
+    day_val = 0 if day_type == "Weekday" else 1
+
+    # ML prediction
+    input_data = pd.DataFrame({
+    "time": [time_of_day],
+    "day": [day_val]
+    })
+
+    prediction = model.predict(input_data)[0]
+
+    cars_per_minute = {
+        'N': int(prediction[0]),
+        'S': int(prediction[1]),
+        'E': int(prediction[2]),
+        'W': int(prediction[3])
+    }
+
+    st.sidebar.success(f"Predicted Traffic: {cars_per_minute}")
+
+# Algorithm selection
 st.sidebar.header("Optimization Algorithm")
 
 selected_algorithm = st.sidebar.selectbox(
@@ -35,13 +85,7 @@ selected_algorithm = st.sidebar.selectbox(
     ["Simulated Annealing", "Hill Climbing", "Genetic Algorithm"]
 )
 
-cars_per_minute = {
-    'N': north_rate,
-    'S': south_rate,
-    'E': east_rate,
-    'W': west_rate
-}
-
+# Run button
 if st.button("Run AI Optimization", type="primary"):
 
     environment = TrafficEnvironment(
