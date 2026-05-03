@@ -160,13 +160,13 @@ total_clearance_time = st.sidebar.slider(
     4, 12, 6
 )
 
-# 🔥 NEW: Mode selection
+# NEW: Mode selection
 mode = st.sidebar.radio(
     "Select Mode",
     ["Manual Input", "ML Prediction"]
 )
 
-# 🔥 TRAFFIC INPUT HANDLING
+# TRAFFIC INPUT HANDLING
 if mode == "Manual Input":
     st.sidebar.header("Traffic Demand (Cars Per Minute)")
 
@@ -254,7 +254,7 @@ if st.button("Run AI Optimization", type="primary"):
 
     st.subheader("4-Phase Optimization Results (LHD Split-Phasing)")
 
-    # 🔥 NEW: Render Abstract Phase Visualization
+    # NEW: Render Abstract Phase Visualization
     render_signal_animation(gn, gs, ge, gw, cycle_time, total_clearance_time)
 
     # Display 4 metrics
@@ -284,4 +284,4 @@ if st.button("Run AI Optimization", type="primary"):
         f"Clearance({total_clearance_time}s) = "
         f"{gn + gs + ge + gw + total_clearance_time}s "
         f"(Target Cycle: {cycle_time}s)"
-    )
+    )
