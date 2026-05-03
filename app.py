@@ -88,6 +88,7 @@ selected_algorithm = st.sidebar.selectbox(
 # Run button
 if st.button("Run AI Optimization", type="primary"):
 
+    # Initialize environment with 4-phase clearance
     environment = TrafficEnvironment(
         cycle_time,
         t_total_clearance=total_clearance_time
@@ -95,52 +96,55 @@ if st.button("Run AI Optimization", type="primary"):
 
     if selected_algorithm == "Simulated Annealing":
         optimizer = SimulatedAnnealing(environment, cars_per_minute)
-
     elif selected_algorithm == "Hill Climbing":
         optimizer = HillClimbing(environment, cars_per_minute)
-
     else:
         optimizer = GeneticAlgorithm(environment, cars_per_minute)
 
     with st.spinner(f"Running {selected_algorithm}..."):
-        optimized_ns, optimized_ew, optimized_delay = optimizer.optimize()
+        # Optimizer now returns (gn, gs, ge, gw, delay)
+        gn, gs, ge, gw, optimized_delay = optimizer.optimize()
 
     st.success(f"Algorithm Used: {selected_algorithm}")
 
-    # Baseline
+    # Baseline (4-phase equal split)
     total_green_time = cycle_time - total_clearance_time
-    baseline_ns = total_green_time // 2
-    baseline_ew = total_green_time - baseline_ns
+    base_val = total_green_time // 4
+    baseline_timings = [base_val] * 4
+    baseline_timings[0] += total_green_time - sum(baseline_timings)
 
     baseline_delay = environment.get_total_delay(
-        baseline_ns,
-        baseline_ew,
+        *baseline_timings,
         cars_per_minute
     )
 
-    st.subheader("Optimization Results")
+    st.subheader("4-Phase Optimization Results (LHD Split-Phasing)")
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Optimized NS Green", f"{optimized_ns}s")
-    col2.metric("Optimized EW Green", f"{optimized_ew}s")
+    # Display 4 metrics
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("North Green", f"{gn}s")
+    m2.metric("South Green", f"{gs}s")
+    m3.metric("East Green", f"{ge}s")
+    m4.metric("West Green", f"{gw}s")
 
+    # Reduction metric
     improvement_percent = (
         (baseline_delay - optimized_delay) /
         max(0.01, baseline_delay)
     ) * 100
-
-    col3.metric("Delay Reduction", f"{improvement_percent:.1f}%")
+    
+    st.metric("Total Delay Reduction", f"{improvement_percent:.1f}%")
 
     results_table = pd.DataFrame({
-        "Scenario": ["Equal Split", "AI Optimized"],
+        "Scenario": ["Equal Split (25% each)", "AI Optimized (Split-Phasing)"],
         "Average Waiting Time (seconds)": [baseline_delay, optimized_delay]
     })
 
     st.bar_chart(results_table.set_index("Scenario"))
 
     st.info(
-        f"Check: NS({optimized_ns}) + EW({optimized_ew}) + "
-        f"Clearance({total_clearance_time}) = "
-        f"{optimized_ns + optimized_ew + total_clearance_time}s "
-        f"(Cycle: {cycle_time}s)"
-    )
+        f"**Verification Check:** N({gn}s) + S({gs}s) + E({ge}s) + W({gw}s) + "
+        f"Clearance({total_clearance_time}s) = "
+        f"{gn + gs + ge + gw + total_clearance_time}s "
+        f"(Target Cycle: {cycle_time}s)"
+    )
